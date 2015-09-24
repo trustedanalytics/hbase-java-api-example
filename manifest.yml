@@ -1,0 +1,9 @@
+---
+applications:
+- name: hbase-reader
+  memory: 1G
+  instances: 1
+  host: hbase-reader
+  path: build/libs/hbase-rest-0.0.1-SNAPSHOT.jar
+  services:
+      - hbase1
