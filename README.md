@@ -26,7 +26,8 @@ After being deployed to TAP it provides these functionalities through the follow
 ## Under the hood
 This is a simple spring boot application. Key point of interest here are:
 
-* extracting HBase configuration information (required for connection; provided by HBase broker)
+* extracting HBase configuration information (required for connection; provided by hbase-broker and kerberos-broker)
+* connect to HBase and authenticate in kerberos
 * using HBase client to perform some admin operations (in our case: getting information on tables)
 * using HBase client to perform some operations on tables (in our case: reading data)
 
@@ -34,7 +35,7 @@ This is a simple spring boot application. Key point of interest here are:
 The following sections will present information on the broker and client API role. 
 
 ### HBase broker
-HBase broker of TAP provisiones a namespace for the user. 
+HBase broker of TAP provisions a namespace for the user.
 After binding to an app, it also provides some configuration information.
 
 ```
@@ -50,10 +51,7 @@ After binding to an app, it also provides some configuration information.
             ...
           },
           "hbase.namespace": "2bd6c4db32236dd4a33d19f8ef76257b4a69ff1b",
-          "kerberos": {
-            "kdc": "cdh-manager.server.com",
-            "krealm": "CLOUDERA"
-          }
+          ...
         },
         "label": "hbase",
         "name": "hbase1",
@@ -67,40 +65,44 @@ After binding to an app, it also provides some configuration information.
 Essential fragments here are:
 
 * _name_ key - service instance name
-* _credential_ section - crutial configuration information, including:
+* _credential_ section - crucial configuration information, including:
   * zookeeper settings (required to connect to HBase)
-  * kerberos settings (used when working with kerberized environment) 
   * hbase.namespace key - the namespace created for the user
-  
-This information is extracted by HBaseConfig class.
 
-```Java
-@Configuration
-public class HBaseConfig {
-    @Value("${hbase.namespace}")
-    private String hbaseNamespace;
+### Kerberos broker
+In TAP Kerberos credentials can be obtained from kerberos-broker. After creating service instance and binding it to an application, the following information are available:
 
-    @Value("${zookeeper.quorum}")
-    private String zookeeperQuorum;
-
-    @Value("${zookeeper.clientPort}")
-    private String zookeeperClientPort;
-
-    @Bean
-    protected org.apache.hadoop.conf.Configuration HBaseConfiguration() throws IOException {
-        org.apache.hadoop.conf.Configuration conf = HBaseConfiguration.create();
-        conf.set(HConstants.ZOOKEEPER_QUORUM, zookeeperQuorum);
-        conf.set(HConstants.ZOOKEEPER_CLIENT_PORT, zookeeperClientPort);
-        return conf;
-    }
-}
+```
+  "kerberos": [
+   {
+    "credentials": {
+     "enabled": true,
+     "kcacert": "...",
+     "kdc": "...",
+     "kpassword": "...",
+     "krealm": "...",
+     "kuser": "..."
+    },
+    "label": "kerberos",
+    "name": "kerberos-instance",
+    "plan": "shared",
+    "tags": [
+     "kerberos"
+    ]
+   }
+  ]
 ```
 
-In this sample code passage we simply extract zookeeper qorum and port and use it to create Configuration 
-object required to obtain connection to HBase (see: HBase Java API section).
+### Connecting to HBase
+TAP platform provides [hadoop-utils library](https://github.com/trustedanalytics/hadoop-utils "hadoop-utils"). It contains many usefull utils.
+For example, connecting to HBase boils down to:
+```Java
+    Hbase.newInstance().createConnection().connect();
+```
 
-> Please, note the expressions used in `@Value` annotation. They indicate to properties defined in src/main/resources/application.properties.
-Adjust properties file accordingly to your needs.
+hadoop-utils takes care of the configuration and authentication (reads data from HBase and Kerberos service binding).
+
+**TO DO: update info about namespace and service name in applciation.properties. How namespace is read/used.**
 
 ### HBase Java API (1.1.2)
 HBase project provides Java client API. 
@@ -117,6 +119,19 @@ If you want to use the API in your Maven project, the corresponding dependency i
 
 ("org.apache.hbase:hbase-client:1.1.2" for Gradle).
 
+In our case, we depend on hadoop-utils instead  which bring all required dependencies:
+
+```
+<dependency>
+	<groupId>org.trustedanalytics</groupId>
+	<artifactId>hadoop-utils</artifactId>
+	<version>0.6.5</version>
+</dependency>
+```
+
+("org.trustedanalytics:hadoop-utils:0.6.5" for Gradle)
+
+
 You'll find javadocs here: [https://hbase.apache.org/apidocs/index.html/](https://hbase.apache.org/apidocs/org/apache/hadoop/hbase/client/package-summary.html)
 
 The API allows for interaction with HBase for DDL (administrative tasks like tables creation/deletion) and DML (data importing, querying).
@@ -126,7 +141,7 @@ This sample application shows some examples of these operations.
 #### Row get
 ```Java
        Result r = null; 
-       try (Connection connection = ConnectionFactory.createConnection(conf)) {
+       try (Connection connection = hBaseConnectionFactory.connect()) {
             Table table = connection.getTable(TableName.valueOf(name));
             Get get = new Get(Bytes.toBytes(rowKey));
             r = table.get(get);
@@ -141,9 +156,8 @@ This sample application shows some examples of these operations.
 Get first 10 rows of given table (by _name_):
 
 ```Java
-
-        List<RowValue> result = new ArrayList<>();
-        try (Connection connection = ConnectionFactory.createConnection(conf)) {
+       List<RowValue> result = new ArrayList<>();
+       try (Connection connection = hBaseConnectionFactory.connect()) {
             Table table = connection.getTable(TableName.valueOf(name));
 
             Scan scan = new Scan();
@@ -162,8 +176,8 @@ Get first 10 rows of given table (by _name_):
 Fetch list of tables:
 
 ```Java
-      List<TableDescription> result = null;
-      try (Connection connection = ConnectionFactory.createConnection(conf);
+       List<TableDescription> result = null;
+       try (Connection connection = hBaseConnectionFactory.connect();
           Admin admin = connection.getAdmin()) {
           HTableDescriptor[] tables = admin.listTables();
 
@@ -205,7 +219,13 @@ cf create-service hbase shared hbase1
 To use this instance either add it to manifest.yml or bind it to the app through CLI.
 
 
-You can define the binding in _services_ section of app's manifest file:
+If it is not already done, create an instance of Kerberos service:
+```
+cf create-service kerberos shared kerberos-instance
+```
+
+
+You can define the bindings in _services_ section of app's manifest file:
 
 ```
 ---
@@ -214,12 +234,15 @@ applications:
   memory: 1G
   instances: 1
   host: hbase-reader
-  path: build/libs/hbase-rest-0.0.1-SNAPSHOT.jar
+  path: build/libs/hbase-rest-0.0.2-SNAPSHOT.jar
   services:
       - hbase1
+      - kerberos-instance
 ```
 
 > Sample manifest is provided in this project for your convenience. Please modify it for your needs (application name, service name, etc.)
+> For example, src/main/resources/application-cloud.properties uses HBase service name for some keys. Adjust properties file accordingly to your needs.
+
 
 After this you are ready to push your application to the platform:
 ```
@@ -235,6 +258,5 @@ cf bind-service hbase-reader hbase1
 cf restage hbase-reader
 ```
 
-# TODO
+** TODO show binding kerberos-service **
 
-* kerberos support

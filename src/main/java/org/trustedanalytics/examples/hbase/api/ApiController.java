@@ -31,6 +31,7 @@ import org.trustedanalytics.examples.hbase.model.RowValue;
 import org.trustedanalytics.examples.hbase.model.TableDescription;
 import org.trustedanalytics.examples.hbase.services.HBaseService;
 
+import javax.security.auth.login.LoginException;
 import java.io.IOException;
 import java.util.List;
 
@@ -45,8 +46,14 @@ public class ApiController {
     @ResponseBody
     public HttpEntity<List<TableDescription>> listTables() {
         LOG.info("listTables invoked.");
-        List<TableDescription> list = hbaseService.listTables();
-        return new ResponseEntity<List<TableDescription>>(list, HttpStatus.OK);
+        List<TableDescription> list = null;
+        try {
+            list = hbaseService.listTables();
+        } catch (LoginException e) {
+            LOG.error("Error logging in", e);
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+        return new ResponseEntity<>(list, HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/tables/{name}")
@@ -57,12 +64,15 @@ public class ApiController {
         try {
             result = hbaseService.getTableInfo(name);
         } catch (TableNotFoundException e) {
-            return new ResponseEntity<TableDescription>(result, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }  catch (IOException e) {
             LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<TableDescription>(result, HttpStatus.UNPROCESSABLE_ENTITY);
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+        } catch (LoginException e) {
+            LOG.error("Error logging in", e);
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        return new ResponseEntity<TableDescription>(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @RequestMapping("/tables/{name}/tail")
@@ -73,12 +83,15 @@ public class ApiController {
         try {
             result = hbaseService.head(name, true);
         } catch (TableNotFoundException e) {
-            return new ResponseEntity<List<RowValue>>(result, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }  catch (IOException e) {
             LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<List<RowValue>>(result, HttpStatus.UNPROCESSABLE_ENTITY);
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+        } catch (LoginException e) {
+            LOG.error("Error logging in", e);
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        return new ResponseEntity<List<RowValue>>(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @RequestMapping("/tables/{name}/head")
@@ -89,12 +102,15 @@ public class ApiController {
         try {
             result = hbaseService.head(name, false);
         } catch (TableNotFoundException e) {
-            return new ResponseEntity<List<RowValue>>(result, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }  catch (IOException e) {
             LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<List<RowValue>>(result, HttpStatus.UNPROCESSABLE_ENTITY);
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+        } catch (LoginException e) {
+            LOG.error("Error logging in", e);
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        return new ResponseEntity<List<RowValue>>(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/tables", consumes = "application/json")
@@ -104,12 +120,15 @@ public class ApiController {
         try {
             hbaseService.createTable(tableDescription);
         } catch (TableExistsException e) {
-            return new ResponseEntity<String>(e.toString(), HttpStatus.CONFLICT);
+            return new ResponseEntity<>(e.toString(), HttpStatus.CONFLICT);
         } catch (IOException e) {
             LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<String>(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
+        } catch (LoginException e) {
+            LOG.error("Error logging in", e);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.FORBIDDEN);
         }
-        return new ResponseEntity<String>("ok", HttpStatus.OK);
+        return new ResponseEntity<>("ok", HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/tables/{name}/row", consumes = "application/json")
@@ -119,12 +138,15 @@ public class ApiController {
         try {
             hbaseService.putRow(name, rowValue);
         } catch (TableExistsException | NoSuchColumnFamilyException e) {
-            return new ResponseEntity<String>(e.toString(), HttpStatus.CONFLICT);
+            return new ResponseEntity<>(e.toString(), HttpStatus.CONFLICT);
         } catch (IOException e) {
             LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<String>(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
+        } catch (LoginException e) {
+            LOG.error("Error logging in", e);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.FORBIDDEN);
         }
-        return new ResponseEntity<String>("created", HttpStatus.OK);
+        return new ResponseEntity<>("created", HttpStatus.OK);
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/tables/{name}/row/{rowKey}")
@@ -135,11 +157,13 @@ public class ApiController {
         try {
             result = hbaseService.getRow(name, rowKey);
         } catch (TableNotFoundException e) {
-            return new ResponseEntity<RowValue>(result, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         } catch (IOException e) {
-            return new ResponseEntity<RowValue>(result, HttpStatus.UNPROCESSABLE_ENTITY);
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+        } catch (LoginException e) {
+            LOG.error("Error logging in", e);
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        return new ResponseEntity<RowValue>(result, HttpStatus.OK);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
-
 }

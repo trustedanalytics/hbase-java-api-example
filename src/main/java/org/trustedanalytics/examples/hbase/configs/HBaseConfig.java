@@ -16,38 +16,17 @@
 
 package org.trustedanalytics.examples.hbase.configs;
 
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HConstants;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.trustedanalytics.hadoop.config.client.helper.Hbase;
 
 import java.io.IOException;
 
 @Configuration
 public class HBaseConfig {
 
-    @Value("${hbase.namespace}")
-    private String hbaseNamespace;
-
-    @Value("${zookeeper.quorum}")
-    private String zookeeperQuorum;
-
-    @Value("${zookeeper.clientPort}")
-    private String zookeeperClientPort;
-
     @Bean
-    protected org.apache.hadoop.conf.Configuration hbaseConfiguration() throws IOException {
-        org.apache.hadoop.conf.Configuration conf = HBaseConfiguration.create();
-        conf.set(HConstants.ZOOKEEPER_QUORUM, zookeeperQuorum);
-        conf.set(HConstants.ZOOKEEPER_CLIENT_PORT, zookeeperClientPort);
-
-        // fail fast
-        conf.setInt(HConstants.HBASE_CLIENT_RETRIES_NUMBER, 3);
-        conf.setInt(HConstants.HBASE_CLIENT_PAUSE, 1000);
-        conf.setInt(HConstants.ZK_SESSION_TIMEOUT, 10000);
-        conf.setInt(HConstants.ZOOKEEPER_RECOVERABLE_WAITTIME, 10000);
-
-        return conf;
+    public HBaseConnectionFactory hBaseFactory() {
+        return () -> Hbase.newInstance().createConnection();
     }
 }

@@ -15,11 +15,14 @@
  *
  */
 
-package org.trustedanalytics.examples.hbase.exceptions;
+package org.trustedanalytics.examples.hbase.configs;
 
-public class TableAlreadyExistsException extends Exception {
-    private static final String MESSAGE = "Table %s already exists.";
-    public TableAlreadyExistsException(String tableName) {
-        super(String.format(MESSAGE, tableName));
-    }
+import org.apache.hadoop.hbase.client.Connection;
+
+import javax.security.auth.login.LoginException;
+import java.io.IOException;
+
+@FunctionalInterface
+public interface HBaseConnectionFactory {
+    Connection connect() throws IOException, LoginException;
 }

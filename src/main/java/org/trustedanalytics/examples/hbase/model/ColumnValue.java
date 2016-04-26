@@ -16,9 +16,6 @@
 
 package org.trustedanalytics.examples.hbase.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class ColumnValue {
     private final String column;
     private final String value;
@@ -29,8 +26,6 @@ public class ColumnValue {
     }
 
     public ColumnValue(String column, String value) {
-        super();
-
         this.column = column;
         this.value = value;
     }
@@ -43,7 +38,8 @@ public class ColumnValue {
         return column;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "ColumnValue{" +
             "column='" + column + '\'' +
             ", value='" + value + '\'' +

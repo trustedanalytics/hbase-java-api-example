@@ -7,3 +7,4 @@ applications:
   path: build/libs/hbase-rest-0.0.1-SNAPSHOT.jar
   services:
       - hbase1
+      - kerberos-instance

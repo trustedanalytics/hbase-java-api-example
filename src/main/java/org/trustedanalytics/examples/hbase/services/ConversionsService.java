@@ -69,7 +69,7 @@ public class ConversionsService {
         return result;
     }
 
-    public List<ColumnValue> constructColumnValues(NavigableMap<byte[], byte[]> map) {
+    private List<ColumnValue> constructColumnValues(NavigableMap<byte[], byte[]> map) {
         List<ColumnValue> result = null;
         result = map.entrySet().stream()
                 .map(i -> new ColumnValue(new String(i.getKey()), new String(i.getValue())))

@@ -29,7 +29,6 @@ public class RowValue {
     }
 
     public RowValue(String rowKey, List<ColumnFamilyValue> columnFamilies) {
-        super();
         this.rowKey = rowKey;
         this.columnFamilies = columnFamilies;
     }

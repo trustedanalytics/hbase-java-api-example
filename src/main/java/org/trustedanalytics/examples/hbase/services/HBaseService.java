@@ -21,16 +21,21 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.*;
-
+import org.apache.hadoop.hbase.filter.PageFilter;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.trustedanalytics.examples.hbase.model.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.trustedanalytics.examples.hbase.configs.HBaseConnectionFactory;
+import org.trustedanalytics.examples.hbase.model.ColumnFamilyValue;
+import org.trustedanalytics.examples.hbase.model.ColumnValue;
+import org.trustedanalytics.examples.hbase.model.RowValue;
+import org.trustedanalytics.examples.hbase.model.TableDescription;
 
+import javax.security.auth.login.LoginException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,10 +49,10 @@ public class HBaseService {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseService.class);
 
     @Autowired
-    Configuration conf;
+    ConversionsService conversionsService;
 
     @Autowired
-    ConversionsService conversionsService;
+    HBaseConnectionFactory hBaseConnectionFactory;
 
     @Value("${hbase.namespace}")
     private String hbaseNamespace;
@@ -57,13 +62,11 @@ public class HBaseService {
 
     /**
      * Get list of tables in given namespace;
-     *
-     * @return
      */
-    public List<TableDescription> listTables() {
+    public List<TableDescription> listTables() throws LoginException {
         List<TableDescription> result = null;
 
-        try (Connection connection = ConnectionFactory.createConnection(conf);
+        try (Connection connection = hBaseConnectionFactory.connect();
             Admin admin = connection.getAdmin()) {
             HTableDescriptor[] tables = admin.listTables();
 
@@ -78,10 +81,10 @@ public class HBaseService {
         return result;
     }
 
-    public TableDescription getTableInfo(String name) throws IOException {
+    public TableDescription getTableInfo(String name) throws IOException, LoginException {
         TableDescription result = null;
 
-        try (Connection connection = ConnectionFactory.createConnection(conf);
+        try (Connection connection = hBaseConnectionFactory.connect();
             Admin admin = connection.getAdmin()) {
             HTableDescriptor tableDesc = admin.getTableDescriptor(TableName.valueOf(name));
             result = conversionsService.constructTableDescription(tableDesc);
@@ -90,10 +93,10 @@ public class HBaseService {
         return result;
     }
 
-    public List<RowValue> head(String name, boolean reverse) throws IOException {
+    public List<RowValue> head(String name, boolean reverse) throws IOException, LoginException {
         List<RowValue> result = new ArrayList<>();
 
-        try (Connection connection = ConnectionFactory.createConnection(conf)) {
+        try (Connection connection = hBaseConnectionFactory.connect()) {
             Table table = connection.getTable(TableName.valueOf(name));
 
             Scan scan = new Scan();
@@ -110,8 +113,8 @@ public class HBaseService {
     }
 
 
-    public void createTable(TableDescription tableDescription) throws IOException {
-        try (Connection connection = ConnectionFactory.createConnection(conf);
+    public void createTable(TableDescription tableDescription) throws IOException, LoginException {
+        try (Connection connection = hBaseConnectionFactory.connect();
             Admin admin = connection.getAdmin()) {
 
             HTableDescriptor table = new HTableDescriptor(TableName.valueOf(ensureNamespace(tableDescription.getTableName())));
@@ -123,8 +126,8 @@ public class HBaseService {
         }
     }
 
-    public void putRow(String name, RowValue row) throws IOException {
-        try (Connection connection = ConnectionFactory.createConnection(conf)) {
+    public void putRow(String name, RowValue row) throws IOException, LoginException {
+        try (Connection connection = hBaseConnectionFactory.connect()) {
             Table table = connection.getTable(TableName.valueOf(name));
 
             Put p = new Put(Bytes.toBytes(row.getRowKey()));
@@ -138,9 +141,9 @@ public class HBaseService {
         }
     }
 
-    public RowValue getRow(String name, String rowKey) throws IOException {
+    public RowValue getRow(String name, String rowKey) throws IOException, LoginException {
        Result r = null; 
-       try (Connection connection = ConnectionFactory.createConnection(conf)) {
+       try (Connection connection = hBaseConnectionFactory.connect()) {
             Table table = connection.getTable(TableName.valueOf(name));
             Get get = new Get(Bytes.toBytes(rowKey));
             r = table.get(get);
@@ -150,10 +153,11 @@ public class HBaseService {
     }
 
     private String ensureNamespace(String tableName) {
-        if (!tableName.contains(":")) {
+        if (!tableName.contains(":") && !Strings.isEmpty(hbaseNamespace)) {
             tableName = String.format("%s:%s", hbaseNamespace, tableName);
         }
 
         return tableName;
     }
+
 }

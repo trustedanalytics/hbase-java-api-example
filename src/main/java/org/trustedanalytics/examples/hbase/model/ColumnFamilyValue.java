@@ -40,7 +40,8 @@ public class ColumnFamilyValue {
         return columnValues;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "ColumnFamilyValue{" +
             "familyName='" + familyName + '\'' +
             ", columnValues=" + columnValues +
