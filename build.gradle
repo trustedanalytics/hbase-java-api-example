@@ -38,7 +38,7 @@ apply plugin: 'io.spring.dependency-management'
 
 jar {
     baseName = 'hbase-rest'
-    version = '0.0.1-SNAPSHOT'
+    version = '0.0.2'
 }
 
 sourceCompatibility = 1.8

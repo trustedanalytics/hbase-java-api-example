@@ -55,7 +55,7 @@ After binding to an app, it also provides some configuration information.
         },
         "label": "hbase",
         "name": "hbase1",
-        "plan": "shared",
+        "plan": "bare",
         "tags": []
       }
    ]
@@ -101,8 +101,6 @@ For example, connecting to HBase boils down to:
 ```
 
 hadoop-utils takes care of the configuration and authentication (reads data from HBase and Kerberos service binding).
-
-**TO DO: update info about namespace and service name in applciation.properties. How namespace is read/used.**
 
 ### HBase Java API (1.1.2)
 HBase project provides Java client API. 
@@ -204,8 +202,6 @@ After cloning the repository you will be able to compile the project with:
 ./gradlew clean assemble
 ```
 
-(or `mvn clean package` for Maven)
-
 Before deploying, which can be done with `cf push`, make sure there is an HBase instance available for you.
 
 
@@ -213,7 +209,7 @@ Before deploying, which can be done with `cf push`, make sure there is an HBase 
 If it is not already done, create an instance of HBase service:
 
 ```
-cf create-service hbase shared hbase1
+cf create-service hbase bare hbase1
 ```
 
 To use this instance either add it to manifest.yml or bind it to the app through CLI.
@@ -234,7 +230,7 @@ applications:
   memory: 1G
   instances: 1
   host: hbase-reader
-  path: build/libs/hbase-rest-0.0.2-SNAPSHOT.jar
+  path: build/libs/hbase-rest-0.0.2.jar
   services:
       - hbase1
       - kerberos-instance
@@ -255,8 +251,12 @@ If you plan to *bind an instance of HBase to applications that is already runnin
 ```
 cf bind-service hbase-reader hbase1
 
+cf bind-service hbase-reader kerberos-instance
+
+
 cf restage hbase-reader
 ```
 
-** TODO show binding kerberos-service **
+# TO DO
+* update info about namespace and service name in applciation.properties. How namespace is read/used.
 
