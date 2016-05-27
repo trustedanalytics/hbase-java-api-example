@@ -199,7 +199,13 @@ The procedure boils down to following steps.
 After cloning the repository you will be able to compile the project with:
 
 ```
-./gradlew clean assemble
+./gradlew clean check assemble
+```
+
+(optional) to update headers use
+
+```
+./gradlew licenseFormatMain
 ```
 
 Before deploying, which can be done with `cf push`, make sure there is an HBase instance available for you.
