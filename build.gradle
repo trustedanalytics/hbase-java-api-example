@@ -35,10 +35,11 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'spring-boot'
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'application'
 
 jar {
     baseName = 'hbase-rest'
-    version = '0.0.2'
+    version = '0.0.3'
 }
 
 sourceCompatibility = 1.8
@@ -81,6 +82,10 @@ task wrapper(type: Wrapper) {
     gradleVersion = '2.8'
 }
 
+task('info') << {
+    println jar.baseName
+    println jar.version
+}
 
 springBoot {
     mainClass = "org.trustedanalytics.examples.hbase.Main"
