@@ -1,0 +1,1 @@
+-e git+git@github.com:trustedanalytics/python-app-deployment-helpers.git@b1517c0f26d6079098bd473e759546550b0e5dc3#egg=app_deployment_helpers

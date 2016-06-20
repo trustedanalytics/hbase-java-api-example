@@ -193,6 +193,7 @@ Of course, obtaining the connection for every operation is costly (connect to Zo
 In real life, you'd probably strive to reuse HBase connections.
 
 ## Compiling and deploying the example
+### Manual deployment
 App deployment is described in details on the Platform Wiki: [Getting started Guilde](https://github.com/trustedanalytics/platform-wiki/wiki/Getting%20Started%20Guide).
 
 The procedure boils down to following steps.
@@ -262,6 +263,13 @@ cf bind-service hbase-reader kerberos-instance
 
 cf restage hbase-reader
 ```
+
+### Automated deployment
+* Switch to `deploy` directory: `cd deploy`
+* Install tox: `sudo -E pip install --upgrade tox`
+* Run: `tox`
+* Activate virtualenv with installed dependencies: `. .tox/py27/bin/activate`
+* Run deployment script: `python deploy.py` providing required parameters when running script (`python deploy.py -h` to check script parameters with their descriptions).
 
 # TO DO
 * update info about namespace and service name in applciation.properties. How namespace is read/used.
