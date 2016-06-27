@@ -23,6 +23,11 @@ After being deployed to TAP it provides these functionalities through the follow
 |/api/tables/{name}/row/{rowKey}|GET     |get row by given row key |
 
 
+You can use Swagger API to work with the service:
+
+    http://hbase-reader.{domain.com}/swagger-ui.html
+
+
 ## Under the hood
 This is a simple spring boot application. Key point of interest here are:
 

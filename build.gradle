@@ -20,7 +20,7 @@ buildscript {
     }
     repositories {
         mavenCentral()
-	maven {
+        maven {
             url 'http://repo.spring.io/release'
             url 'https://plugins.gradle.org/m2/'
         }
@@ -42,7 +42,7 @@ apply plugin: 'com.github.hierynomus.license'
 
 jar {
     baseName = 'hbase-rest'
-    version = '0.0.4'
+    version = '0.1.0'
 }
 
 sourceCompatibility = 1.8
@@ -70,6 +70,13 @@ dependencies {
     compile("org.springframework.boot:spring-boot-devtools")
 
     compile("org.trustedanalytics:hadoop-utils:0.6.11")
+
+    compile("io.springfox:springfox-swagger-ui:2.4.0") {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    compile("io.springfox:springfox-swagger2:2.4.0") {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
 
     testCompile("org.springframework.boot:spring-boot-starter-test")
 }

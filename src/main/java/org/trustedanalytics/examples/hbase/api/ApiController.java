@@ -15,17 +15,17 @@
  */
 package org.trustedanalytics.examples.hbase.api;
 
-import org.apache.hadoop.hbase.TableExistsException;
-import org.apache.hadoop.hbase.TableNotFoundException;
-import org.apache.hadoop.hbase.regionserver.NoSuchColumnFamilyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.trustedanalytics.examples.hbase.model.RowValue;
 import org.trustedanalytics.examples.hbase.model.TableDescription;
 import org.trustedanalytics.examples.hbase.services.HBaseService;
@@ -37,132 +37,57 @@ import java.util.List;
 @Controller
 @RequestMapping(value = "/api")
 public class ApiController {
+
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
 
     @Autowired HBaseService hbaseService;
 
-    @RequestMapping("/tables")
+    @RequestMapping(method = RequestMethod.GET, value = "/tables")
     @ResponseBody
-    public HttpEntity<List<TableDescription>> listTables() {
+    public List<TableDescription> listTables() throws IOException, LoginException {
         LOG.info("listTables invoked.");
-        List<TableDescription> list = null;
-        try {
-            list = hbaseService.listTables();
-        } catch (LoginException e) {
-            LOG.error("Error logging in", e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-        return new ResponseEntity<>(list, HttpStatus.OK);
+        return hbaseService.listTables();
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/tables/{name}")
     @ResponseBody
-    public HttpEntity<TableDescription> getSingleTable(@PathVariable(value = "name") String name) {
+    public TableDescription getSingleTable(@PathVariable(value = "name") String name) throws IOException, LoginException {
         LOG.info("getSingleTable for {}.", name);
-        TableDescription result = null;
-        try {
-            result = hbaseService.getTableInfo(name);
-        } catch (TableNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }  catch (IOException e) {
-            LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
-        } catch (LoginException e) {
-            LOG.error("Error logging in", e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return hbaseService.getTableInfo(name);
     }
 
-    @RequestMapping("/tables/{name}/tail")
+    @RequestMapping(method = RequestMethod.GET, value = "/tables/{name}/tail")
     @ResponseBody
-    public HttpEntity<List<RowValue>> tail(@PathVariable(value = "name") String name) {
+    public List<RowValue> tail(@PathVariable(value = "name") String name) throws IOException, LoginException {
         LOG.info("tail for {}.", name);
-        List<RowValue> result = null;
-        try {
-            result = hbaseService.head(name, true);
-        } catch (TableNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }  catch (IOException e) {
-            LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
-        } catch (LoginException e) {
-            LOG.error("Error logging in", e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return hbaseService.head(name, true);
     }
 
-    @RequestMapping("/tables/{name}/head")
+    @RequestMapping(method = RequestMethod.GET, value = "/tables/{name}/head")
     @ResponseBody
-    public HttpEntity<List<RowValue>> head(@PathVariable(value = "name") String name) {
+    public List<RowValue> head(@PathVariable(value = "name") String name) throws IOException, LoginException {
         LOG.info("head for {}.", name);
-        List<RowValue> result = null;
-        try {
-            result = hbaseService.head(name, false);
-        } catch (TableNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }  catch (IOException e) {
-            LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
-        } catch (LoginException e) {
-            LOG.error("Error logging in", e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return hbaseService.head(name, false);
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/tables", consumes = "application/json")
-    @ResponseBody
-    public HttpEntity<String> createTable(@RequestBody TableDescription tableDescription) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createTable(@RequestBody TableDescription tableDescription) throws LoginException, IOException {
         LOG.info("tail for {}.", tableDescription.toString());
-        try {
-            hbaseService.createTable(tableDescription);
-        } catch (TableExistsException e) {
-            return new ResponseEntity<>(e.toString(), HttpStatus.CONFLICT);
-        } catch (IOException e) {
-            LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
-        } catch (LoginException e) {
-            LOG.error("Error logging in", e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.FORBIDDEN);
-        }
-        return new ResponseEntity<>("ok", HttpStatus.OK);
+        hbaseService.createTable(tableDescription);
     }
 
     @RequestMapping(method = RequestMethod.POST, value = "/tables/{name}/row", consumes = "application/json")
-    @ResponseBody
-    public HttpEntity<String> putRow(@PathVariable(value = "name") String name, @RequestBody RowValue rowValue) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public void putRow(@PathVariable(value = "name") String name, @RequestBody RowValue rowValue) throws IOException, LoginException {
         LOG.info("put for {}, {}.", name, rowValue);
-        try {
-            hbaseService.putRow(name, rowValue);
-        } catch (TableExistsException | NoSuchColumnFamilyException e) {
-            return new ResponseEntity<>(e.toString(), HttpStatus.CONFLICT);
-        } catch (IOException e) {
-            LOG.error("Error while talking to HBase", e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNPROCESSABLE_ENTITY);
-        } catch (LoginException e) {
-            LOG.error("Error logging in", e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.FORBIDDEN);
-        }
-        return new ResponseEntity<>("created", HttpStatus.OK);
+        hbaseService.putRow(name, rowValue);
     }
 
     @RequestMapping(method = RequestMethod.GET, value = "/tables/{name}/row/{rowKey}")
     @ResponseBody
-    public HttpEntity<RowValue> getRow(@PathVariable(value = "name") String name, @PathVariable(value = "rowKey") String rowKey) {
-        RowValue result = null;
+    public RowValue getRow(@PathVariable(value = "name") String name, @PathVariable(value = "rowKey") String rowKey) throws IOException, LoginException {
         LOG.info("get for {}, {}.", name, rowKey);
-        try {
-            result = hbaseService.getRow(name, rowKey);
-        } catch (TableNotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        } catch (IOException e) {
-            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
-        } catch (LoginException e) {
-            LOG.error("Error logging in", e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return hbaseService.getRow(name, rowKey);
     }
 }
