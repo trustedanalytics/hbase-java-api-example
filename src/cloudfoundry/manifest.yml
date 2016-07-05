@@ -4,7 +4,7 @@ applications:
   memory: 1G
   instances: 1
   host: hbase-reader
-  path: build/libs/hbase-rest-0.0.4.jar
+  path: build/libs/hbase-rest-@version@.jar
   services:
       - hbase1
       - kerberos-instance

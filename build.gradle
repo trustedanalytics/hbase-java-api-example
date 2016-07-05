@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+version = '0.1.1'
+
 buildscript {
     ext {
         springBootVersion = '1.3.3.RELEASE'
@@ -42,7 +44,7 @@ apply plugin: 'com.github.hierynomus.license'
 
 jar {
     baseName = 'hbase-rest'
-    version = '0.1.0'
+    version = project.version
 }
 
 sourceCompatibility = 1.8
@@ -106,3 +108,15 @@ license {
     ext.year = Calendar.getInstance().get(Calendar.YEAR)
     strictCheck true
 }
+
+task copyApplicationManifest(type: Copy) {
+    from "src/cloudfoundry"
+    include "**/*.yml"
+    into "."
+
+    filter org.apache.tools.ant.filters.ReplaceTokens, tokens: [
+            version: project.version
+    ]
+}
+
+assemble.dependsOn copyApplicationManifest

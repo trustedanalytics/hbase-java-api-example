@@ -111,3 +111,4 @@ gradle-app.setting
 # python related
 
 /deploy/.tox
+/manifest.yml

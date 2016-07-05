@@ -216,6 +216,9 @@ After cloning the repository you will be able to compile the project with:
 
 Before deploying, which can be done with `cf push`, make sure there is an HBase instance available for you.
 
+Also take notice that after you build the project with `gradlew assemble` 
+the application manifest file has been auto-generated from the template **src/cloudfoundry/manifest.yml** 
+and copied into the project root folder.
 
 
 If it is not already done, create an instance of HBase service:
